@@ -886,7 +886,6 @@ if (config.timeoutMs) {
 }
 process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC ??= '1';
 process.env.DISABLE_INSTALLATION_CHECKS ??= '1';
-process.env.CLAUDE_CODE_ENABLE_AUTO_MODE ??= '1';
 // Use system ripgrep (extracted vendor rg path was build-time-baked; system
 // rg is the most reliable fallback under Bun runtime).
 process.env.USE_BUILTIN_RIPGREP ??= '1';
@@ -1005,15 +1004,25 @@ const patches = [
     replacer: (m, fn) => `function ${fn}(){return!0}`,
   },
   {
-    // ≤v2.1.110: if(Y!=="firstParty"&&Y!=="anthropicAws")return!1;
-    // v2.1.119–v2.1.149: same shape, extra model branches downstream.
-    // v2.1.158+: provider gate refactored into cH8() helper (bypassed via
-    //   CLAUDE_CODE_ENABLE_AUTO_MODE env set in wrapper); remaining in-line
-    //   gate gained a model-condition suffix:
+    // v2.1.158+: provider gate refactored into helper function:
+    //   function mw$(H){if(H==="firstParty"||H==="anthropicAws")return!0;return CH(process.env.CLAUDE_CODE_ENABLE_AUTO_MODE)}
+    //   Called as: if(!mw$(q))return!1;  inside the auto-mode model gate.
+    //   Lookahead ensures we only strip the call inside the auto-mode gate
+    //   (the next 300 chars must contain !=="firstParty") and not unrelated
+    //   if(!fn(x))return!1; patterns elsewhere.
+    //   Not present in ≤v2.1.149 (provider gate was inline).
+    name: 'Auto-mode unlock for third-party API (provider helper gate)',
+    pattern: /if\(!([\w$]+)\(([\w$]+)\)\)return!1;(?=(?:(?!function\s).){0,300}!=="firstParty")/g,
+    replacer: () => '',
+    optional: true,
+  },
+  {
+    // ≤v2.1.149: if(Y!=="firstParty"&&Y!=="anthropicAws")return!1;
+    // v2.1.158+: same shape with model-condition suffix:
     //   if(q!=="firstParty"&&q!=="anthropicAws"&&($==="claude-opus-4-6"||…))return!1;
     //   [^;]* absorbs the optional &&(…) tail safely (no semicolons inside
     //   the if-condition).
-    name: 'Auto-mode unlock for third-party API',
+    name: 'Auto-mode unlock for third-party API (inline gate)',
     pattern: /if\(([\w$]+)!=="firstParty"&&\1!=="anthropicAws"[^;]*\)return!1;/g,
     replacer: () => '',
     sentinel: '!=="firstParty"&&',
