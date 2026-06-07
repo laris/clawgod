@@ -1046,7 +1046,7 @@ const patches = [
     name: 'GrowthBook config overrides',
     pattern: /function ([\w$]+)\(\)\{return\}(function)/g,
     replacer: (m, fn, next) =>
-      `function ${fn}(){try{return j8().growthBookOverrides??null}catch{return null}}${next}`,
+      `function ${fn}(){return null}${next}`,
     selectIndex: 0,
     validate: (match, code) => {
       const pos = code.indexOf(match);

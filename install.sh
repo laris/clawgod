@@ -939,10 +939,9 @@ const patches = [
     name: 'GrowthBook config overrides',
     pattern: /function ([\w$]+)\(\)\{return\}(function)/g,
     replacer: (m, fn, next) =>
-      `function ${fn}(){try{return j8().growthBookOverrides??null}catch{return null}}${next}`,
-    selectIndex: 0,  // first match only (there may be others)
+      `function ${fn}(){return null}${next}`,
+    selectIndex: 0,
     validate: (match, code) => {
-      // Must be near other GrowthBook functions
       const pos = code.indexOf(match);
       const nearby = code.substring(Math.max(0, pos - 500), pos + 500);
       return nearby.includes('growthBook') || nearby.includes('GrowthBook') || nearby.includes('FeatureValue');
