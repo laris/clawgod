@@ -1455,7 +1455,7 @@ if ($normalizedBunBin.Equals($normalizedUserProfile, [StringComparison]::Ordinal
     # absolute path since %USERPROFILE%-relative expansion doesn't apply.
     $bunPathInCmd = $BunBin
 }
-$launcherContent = "@echo off`r`nif not exist `"$cliPathInCmd`" (`r`n  echo clawgod: cli.cjs not found. Reinstall: irm https://github.com/0Chencc/clawgod/releases/latest/download/install.ps1 ^| iex`r`n  exit /b 127`r`n)`r`nif not exist `"$bunPathInCmd`" (`r`n  echo clawgod: bun not found at $bunPathInCmd. Install: https://bun.sh/install`r`n  exit /b 127`r`n)`r`nset CLAUDE_CODE_EXECPATH=%~dp0claude.orig.exe`r`n`"$bunPathInCmd`" `"$cliPathInCmd`" %*"
+$launcherContent = "@echo off`r`nif not exist `"$cliPathInCmd`" (`r`n  echo clawgod: cli.cjs not found. Reinstall: irm https://github.com/0Chencc/clawgod/releases/latest/download/install.ps1 ^| iex`r`n  exit /b 127`r`n)`r`nif not exist `"$bunPathInCmd`" (`r`n  echo clawgod: bun not found at $bunPathInCmd. Install: https://bun.sh/install`r`n  exit /b 127`r`n)`r`nset `"CLAUDE_CODE_EXECPATH=%~dp0claude.orig.exe`"`r`n`"$bunPathInCmd`" `"$cliPathInCmd`" %*"
 
 # Find and back up original claude
 $claudeCmd = Join-Path $BinDir "claude.cmd"
