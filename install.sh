@@ -1290,7 +1290,8 @@ if [ ! -f "$CLAWGOD_DIR/features.json" ]; then
   "tengu_desktop_upsell": false,
   "tengu_malort_pedway": {"enabled": true},
   "tengu_amber_quartz_disabled": false,
-  "tengu_prompt_cache_1h_config": {"allowlist": ["*"]}
+  "tengu_prompt_cache_1h_config": {"allowlist": ["*"]},
+  "tengu_amber_redwood3": "enabled"
 }
 FEATURES_EOF
   info "Default features.json created"

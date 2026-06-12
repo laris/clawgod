@@ -1325,7 +1325,8 @@ if (-not (Test-Path $featuresFile)) {
   "tengu_desktop_upsell": false,
   "tengu_malort_pedway": {"enabled": true},
   "tengu_amber_quartz_disabled": false,
-  "tengu_prompt_cache_1h_config": {"allowlist": ["*"]}
+  "tengu_prompt_cache_1h_config": {"allowlist": ["*"]},
+  "tengu_amber_redwood3": "enabled"
 }
 '@
     [System.IO.File]::WriteAllText($featuresFile, $featuresJson, (New-Object System.Text.UTF8Encoding $false))
