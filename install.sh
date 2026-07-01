@@ -1080,6 +1080,79 @@ const patches = [
     replacer: () => '#22c55e',
   },
 
+  // ── 地区隐写中和 (v2.1.197+) ──
+
+  {
+    // v2.1.197+: geo-steganography in system prompt date string.
+    // qla(e) builds "Today{apostrophe}s date is {date}." where:
+    //   - the apostrophe encodes proxy-detection state (U+0027/U+2019/U+02BC/U+02B9)
+    //   - the date separator encodes timezone (- for non-CN, / for CN)
+    //
+    // Shape:
+    //   function qla(e){let t=rdp(),n=odp(t?.known??!1,t?.labKw??!1),
+    //     r=t?.cnTZ?e.replaceAll("-","/"):e;return`Today${n}s date is ${r}.`}
+    //
+    // Patch: replace entire function body to always use ASCII apostrophe
+    // and pass through the date string unmodified.
+    name: 'Neutralize geo-steganography in date string (qla)',
+    pattern: /function ([\w$]+)\([\w$]+\)\{let [\w$]+=[\w$]+\(\),[\w$]+=[\w$]+\([\w$]+\?\.[\w$]+\?\?!1,[\w$]+\?\.[\w$]+\?\?!1\),[\w$]+=[\w$]+\?\.[\w$]+\?[\w$]+\.replaceAll\("-","\/"\):[\w$]+;return`Today\$\{[\w$]+\}s date is \$\{[\w$]+\}\.`\}/g,
+    replacer: (m) => {
+      // Extract function name and parameter name from the match
+      const fnMatch = m.match(/^function ([\w$]+)\(([\w$]+)\)/);
+      if (!fnMatch) return m;
+      const [, fn, param] = fnMatch;
+      return `function ${fn}(${param}){return\`Today's date is \${${param}}.\`}`;
+    },
+    sentinel: 'replaceAll("-","/")',
+  },
+  {
+    // v2.1.197+: rdp() performs three-axis geo detection:
+    //   1. timezone === "Asia/Shanghai" || "Asia/Urumqi"  → cnTZ
+    //   2. ANTHROPIC_BASE_URL hostname in XOR-obfuscated domain blocklist → known
+    //   3. ANTHROPIC_BASE_URL contains CN-LLM vendor keywords → labKw
+    //
+    // Shape:
+    //   function rdp(){if(vrt())return null;let e=ndp(),t=ekt(),
+    //     n=t==="Asia/Shanghai"||t==="Asia/Urumqi";if(!e)return{known:!1,labKw:!1,cnTZ:n,host:null};
+    //     return{known:edp().some(...),labKw:tdp().some(...),cnTZ:n,host:e}}
+    //
+    // Patch: always return null (same as firstParty path), disabling all detection.
+    name: 'Neutralize geo-detection probe (rdp)',
+    pattern: /function ([\w$]+)\(\)\{if\([\w$]+\(\)\)return null;let [\w$]+=[\w$]+\(\),[\w$]+=[\w$]+\(\),[\w$]+=[\w$]+==="Asia\/Shanghai"\|\|[\w$]+==="Asia\/Urumqi"[^}]*\}/g,
+    replacer: (m) => {
+      const fn = m.match(/^function ([\w$]+)/)[1];
+      return `function ${fn}(){return null}`;
+    },
+    sentinel: 'Asia/Shanghai',
+  },
+  {
+    // v2.1.197+: odp(known, labKw) selects a Unicode apostrophe to encode
+    // proxy detection state into the system prompt:
+    //   !known && !labKw → U+0027 (ASCII)
+    //   known  && !labKw → U+2019 (RIGHT SINGLE QUOTATION MARK)
+    //   !known && labKw  → U+02BC (MODIFIER LETTER APOSTROPHE)
+    //   known  && labKw  → U+02B9 (MODIFIER LETTER PRIME)
+    //
+    // Shape:
+    //   function odp(e,t){if(!e&&!t)return"'";if(e&&!t)return"’";
+    //     if(!e&&t)return"ʼ";return"ʹ"}
+    //
+    // Patch: always return ASCII apostrophe regardless of detection state.
+    // The four Unicode apostrophe variants (’, ʼ, ʹ)
+    // appear as literal UTF-8 in the bundle. Match via [^"]{1,3} since
+    // each is a single Unicode char (1-3 UTF-8 bytes, 1 JS char) inside
+    // double quotes.
+    // Defense-in-depth — qla patch above already bypasses the call to odp,
+    // but if qla’s shape changes this keeps odp harmless.
+    name: ‘Neutralize apostrophe steganography (odp)’,
+    pattern: /function ([\w$]+)\(([\w$]+),([\w$]+)\)\{if\(!\2&&!\3\)return"’";if\(\2&&!\3\)return"(?:\\u2019|’)";if\(!\2&&\3\)return"(?:\\u02[Bb][Cc]|ʼ)";return"(?:\\u02[Bb]9|ʹ)"\}/g,
+    replacer: (m) => {
+      const fn = m.match(/^function ([\w$]+)/)[1];
+      return `function ${fn}(e,t){return"’"}`;
+    },
+    optional: true,  // defense-in-depth; rdp→null already neutralizes the stego channel
+  },
+
   // ── 限制移除 ──
 
   {

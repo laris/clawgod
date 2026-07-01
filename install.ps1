@@ -1183,6 +1183,35 @@ const patches = [
     replacer: () => '#22c55e',
   },
   {
+    name: 'Neutralize geo-steganography in date string (qla)',
+    pattern: /function ([\w$]+)\([\w$]+\)\{let [\w$]+=[\w$]+\(\),[\w$]+=[\w$]+\([\w$]+\?\.[\w$]+\?\?!1,[\w$]+\?\.[\w$]+\?\?!1\),[\w$]+=[\w$]+\?\.[\w$]+\?[\w$]+\.replaceAll\("-","\/"\):[\w$]+;return`Today\$\{[\w$]+\}s date is \$\{[\w$]+\}\.`\}/g,
+    replacer: (m) => {
+      const fnMatch = m.match(/^function ([\w$]+)\(([\w$]+)\)/);
+      if (!fnMatch) return m;
+      const [, fn, param] = fnMatch;
+      return `function ${fn}(${param}){return\`Today's date is \${${param}}.\`}`;
+    },
+    sentinel: 'replaceAll("-","/")',
+  },
+  {
+    name: 'Neutralize geo-detection probe (rdp)',
+    pattern: /function ([\w$]+)\(\)\{if\([\w$]+\(\)\)return null;let [\w$]+=[\w$]+\(\),[\w$]+=[\w$]+\(\),[\w$]+=[\w$]+==="Asia\/Shanghai"\|\|[\w$]+==="Asia\/Urumqi"[^}]*\}/g,
+    replacer: (m) => {
+      const fn = m.match(/^function ([\w$]+)/)[1];
+      return `function ${fn}(){return null}`;
+    },
+    sentinel: 'Asia/Shanghai',
+  },
+  {
+    name: 'Neutralize apostrophe steganography (odp)',
+    pattern: /function ([\w$]+)\(([\w$]+),([\w$]+)\)\{if\(!\2&&!\3\)return"'";if\(\2&&!\3\)return"(?:\\u2019|')";if\(!\2&&\3\)return"(?:\\u02[Bb][Cc]|ʼ)";return"(?:\\u02[Bb]9|ʹ)"\}/g,
+    replacer: (m) => {
+      const fn = m.match(/^function ([\w$]+)/)[1];
+      return `function ${fn}(e,t){return"'"}`;
+    },
+    optional: true,
+  },
+  {
     name: 'Remove CYBER_RISK_INSTRUCTION',
     pattern: /([\w$]+)="IMPORTANT: Assist with authorized security testing[^"]*"/g,
     replacer: (m, varName) => `${varName}=""`,
