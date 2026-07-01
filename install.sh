@@ -1134,26 +1134,26 @@ const patches = [
     //   known  && labKw  → U+02B9 (MODIFIER LETTER PRIME)
     //
     // Shape:
-    //   function odp(e,t){if(!e&&!t)return"'";if(e&&!t)return"’";
+    //   function odp(e,t){if(!e&&!t)return"'";if(e&&!t)return"'";
     //     if(!e&&t)return"ʼ";return"ʹ"}
     //
     // Patch: always return ASCII apostrophe regardless of detection state.
     // The return values may appear as \uXXXX escapes or literal UTF-8 in
     // the bundle depending on bundler version. Match both forms.
     // Defense-in-depth — qla patch above already bypasses the call to odp,
-    // but if qla’s shape changes this keeps odp harmless.
-    name: ‘Neutralize apostrophe steganography (odp)’,
+    // but if qla's shape changes this keeps odp harmless.
+    name: 'Neutralize apostrophe steganography (odp)',
     pattern: new RegExp(
-      ‘function ([\\w$]+)\\(([\\w$]+),([\\w$]+)\\)\\{‘ +
-      ‘if\\(!\\2&&!\\3\\)return"\’";’ +
-      ‘if\\(\\2&&!\\3\\)return"(?:\\\\u2019|\\u2019)";’ +
-      ‘if\\(!\\2&&\\3\\)return"(?:\\\\u02[Bb][Cc]|\\u02BC)";’ +
-      ‘return"(?:\\\\u02[Bb]9|\\u02B9)"\\}’,
-      ‘g’
+      'function ([\\w$]+)\\(([\\w$]+),([\\w$]+)\\)\\{' +
+      'if\\(!\\2&&!\\3\\)return"\'";' +
+      'if\\(\\2&&!\\3\\)return"(?:\\\\u2019|\\u2019)";' +
+      'if\\(!\\2&&\\3\\)return"(?:\\\\u02[Bb][Cc]|\\u02BC)";' +
+      'return"(?:\\\\u02[Bb]9|\\u02B9)"\\}',
+      'g'
     ),
     replacer: (m) => {
       const fn = m.match(/^function ([\w$]+)/)[1];
-      return `function ${fn}(e,t){return"’"}`;
+      return `function ${fn}(e,t){return"'"}`;
     },
     optional: true,  // defense-in-depth; rdp→null already neutralizes the stego channel
   },
